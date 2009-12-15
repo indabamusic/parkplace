@@ -5,7 +5,7 @@ $PARKPLACE_ACCESSORIES = true
 require 'rubygems'
 gem 'mongrel'
 gem 'activesupport', '>= 2.3.5'
-gem 'activerecord',  '~> 2.3.5'
+gem 'activerecord',  '>= 2.3.5'
 require 'parkplace'
 
 DEFAULT_PASSWORD = 'pass@word1'
