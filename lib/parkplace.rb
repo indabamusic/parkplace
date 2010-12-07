@@ -30,6 +30,7 @@ require 'parkplace/s3'
 module ParkPlace
     VERSION = "0.7"
     BUFSIZE = (4 * 1024)
+    LOG_PATH = File.expand_path('../log', File.dirname(__FILE__))
     STORAGE_PATH = File.join(Dir.pwd, 'storage')
     STATIC_PATH = File.expand_path('../static', File.dirname(__FILE__))
     RESOURCE_TYPES = %w[acl torrent]
@@ -89,17 +90,42 @@ module ParkPlace
                 end
             end
             ParkPlace::STORAGE_PATH.replace options.storage_dir
+
+            options.log_dir = File.expand_path(options.log_dir || 'log', options.parkplace_dir)
+            File.makedirs( options.log_dir )
+            ParkPlace::LOG_PATH.replace options.log_dir
         end
         def serve(host, port)
             require 'mongrel'
             require 'mongrel/camping'
+            require 'mongrel/debug' if $VERBOSE || $DAEMONIZE
+            
             if $PARKPLACE_PROGRESS
               require_gem 'mongrel_upload_progress'
               GemPlugin::Manager.instance.load "mongrel" => GemPlugin::INCLUDE
             end
 
-            config = Mongrel::Configurator.new :host => host do
+            cwd = Dir.pwd
+            pid_file = File.join(ParkPlace::LOG_PATH,'mongrel.pid')
+            log_file = File.join(ParkPlace::LOG_PATH,'mongrel.log')
+
+            config = Mongrel::Configurator.new :host => host, :pid_file => pid_file do
+
+                if $DAEMONIZE
+                    daemonize :cwd => cwd, :log_file => log_file 
+
+                    # Need to reopen this log file because daemonize closes any
+                    # file opened before it was called.
+                    if $DEBUG 
+                        ParkPlace::Models::Base.logger = Logger.new(File.join(ParkPlace::LOG_PATH,'camping.log'))
+                        ParkPlace::Models::Base.colorize_logging = false
+                        ParkPlace::Models::Base.logger.formatter = Logger::Formatter.new
+                    end
+                end
+
                 listener :port => port do
+
+                    uri "/", :handler => plugin('/handlers/requestlog::access') if $VERBOSE || $DAEMONIZE
                     uri "/", :handler => Mongrel::Camping::CampingHandler.new(ParkPlace)
                     if $PARKPLACE_PROGRESS
                       uri "/control/buckets", :handler => plugin('/handlers/upload')
@@ -107,6 +133,7 @@ module ParkPlace
                     uri "/favicon", :handler => Mongrel::Error404Handler.new("")
                     trap("INT") { stop }
                     run
+                    write_pid_file if $DAEMONIZE
                 end
             end
 
