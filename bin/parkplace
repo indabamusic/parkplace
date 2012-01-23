@@ -3,6 +3,8 @@ $:.unshift "./lib"
 require 'optparse'
 $PARKPLACE_ACCESSORIES = true
 require 'rubygems'
+require 'bundler/setup'
+
 gem 'mongrel'
 gem 'activesupport', '~> 2.3.5'
 gem 'activerecord',  '~> 2.3.5'
@@ -30,11 +32,11 @@ opts = OptionParser.new do |opts|
     end
 
     opts.on("-D", "--[no-]daemon",  "Daemon mode") do |d|
-        options.daemon = d
+        $DAEMONIZE = options.daemon = d
     end
 
     opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
-        options.verbose = v
+        $VERBOSE = options.verbose = v
     end
 
     opts.on("-u", "--debug", "Debug Mode") do |v|
@@ -69,7 +71,11 @@ ParkPlace.config(options)
 include ParkPlace
 
 ParkPlace::Models::Base.establish_connection(options.database)
-ParkPlace::Models::Base.logger = Logger.new('camping.log') if $DEBUG
+if $DEBUG
+    ParkPlace::Models::Base.logger = Logger.new(File.join(ParkPlace::LOG_PATH,'camping.log'))
+    ParkPlace::Models::Base.colorize_logging = false
+    ParkPlace::Models::Base.logger.formatter = Logger::Formatter.new
+end
 ParkPlace.create
 
 num_users = ParkPlace::Models::User.count

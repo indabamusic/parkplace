@@ -1,0 +1,10 @@
+# Logs and pids
+*.log
+*.pid
+
+# Data storage
+*.db
+*storage*
+
+# Bundler
+Gemfile.lock
