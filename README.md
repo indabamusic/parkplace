@@ -15,7 +15,8 @@ Clone the repository and:
 
 And away you go.
 
-*Hat-tip to [jcn](http://pith.org/) and 
+*Maintained by the team at [Indaba Music](http://www.indabamusic.com). 
+Thanks to [joewest](https://github.com/joewest) for the bundler support and 
 [this guy](http://d.hatena.ne.jp/rabbit2go/20100427/1272376003).*
 
 Here are the original docs, if you're into stuff like that:
